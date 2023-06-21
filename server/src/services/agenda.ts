@@ -1,5 +1,5 @@
 import Agenda, { Job, JobAttributesData } from "agenda";
-import { MongoClient, ObjectId, Db } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import sendMail from './nodemailer'
 
 const mongoURI = "mongodb://localhost:27017";
@@ -12,10 +12,12 @@ const agenda = new Agenda({
 })
 
 // defiine email job
-agenda.define("send Email", async (job: Job<{ to: string; subject: string; text: string }>) => {
+agenda.define("sendEmail", async (job: Job<{ to: string; subject: string; text: string, sent?: boolean }>) => {
     const { to, subject, text } = job.attrs.data;
     // send email here
     await sendMail(to, subject, text)
+    job.attrs.data.sent = true;
+    await job.save();
     console.log(`Sending email to ${to} with subject ${subject} and body ${text}`);
 })
 
@@ -35,16 +37,20 @@ const start = async (): Promise<void> => {
 
 
 interface Email {
-    _id: string;
+    _id?: string;
     to?: string;
     subject?: string;
     text?: string;
     scheduledTime: string | Date;
+    send?: boolean;
 }
 
 export const scheduleEmail = async (email: Email): Promise<void> => {
     try {
-        await agenda.create("send Email", email).schedule(email.scheduledTime).save();
+        await agenda.create("sendEmail", {
+            ...email,
+            sent: false,
+        }).schedule(email.scheduledTime).save();
         console.log('Email scheduled:', email);
     } catch (error) {
         console.error('Error scheduling email:', error);
@@ -81,27 +87,17 @@ export const deleteScheduledEmail = async (emailId: string): Promise<void> => {
 };
 
 // read mail by ID
-
 export const readScheduledEmail = async (emailId: string): Promise<any | null> => {
     try {
         // Find the job with the specified ID
-        const job = await agenda.jobs({ _id: emailId });
+        const job = await agenda.jobs();
+        const filterEmail = job.filter((job) => job.attrs.data._id === emailId);
+        console.log("Scheduled email:", filterEmail);
 
-        if (job.length === 0) {
-            console.log("Email not found:", emailId);
-            return null;
-        }
+        // Return the job data
+        return filterEmail
 
-        // Extract the relevant information from the job
-        const scheduledEmail = {
-            id: job[0].attrs._id.toString(),
-            to: job[0].attrs.data.to,
-            subject: job[0].attrs.data.subject,
-            scheduledTime: job[0].attrs.nextRunAt,
-        };
 
-        console.log("Email found:", scheduledEmail);
-        return scheduledEmail;
     } catch (error) {
         console.error("Error reading scheduled email:", error);
         return null;
@@ -109,16 +105,32 @@ export const readScheduledEmail = async (emailId: string): Promise<any | null> =
 };
 
 
-export const listScheduledEmails = async (): Promise<JobAttributesData[]> => {
+// fetch all the scheduled emails
+export const listScheduledEmails = async (): Promise<Email[]> => {
     try {
-        const agenda = new Agenda();
         const jobs = await agenda.jobs({ name: "sendEmail" });
-        const scheduledEmails = jobs.map((job) => job.attrs.data);
-
-        console.log("Scheduled emails:", scheduledEmails);
+        const scheduledEmails: any = jobs.map((job) => job.attrs.data);
         return scheduledEmails;
     } catch (error) {
         console.error("Error listing scheduled emails:", error);
+        return [];
+    }
+};
+
+// fetch all the unsent emails
+export const listUnsentEmails = async (): Promise<JobAttributesData[]> => {
+    try {
+        const unsentQueuedJobs = await agenda.jobs({
+            name: "sendEmail",
+            "data.sent": false, // Unsucceeded emails
+        });
+
+        const unsentQueuedEmails = unsentQueuedJobs.map((job) => job.attrs.data);
+
+        console.log("Unsent queued emails:", unsentQueuedEmails);
+        return unsentQueuedEmails;
+    } catch (error) {
+        console.error("Error listing unsent emails:", error);
         return [];
     }
 };

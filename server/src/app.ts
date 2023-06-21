@@ -15,7 +15,7 @@ app.use(express.json())
 
 
 app.use('/', mailRouter)
-app.use('/status/:id', mailStatus)
+app.use('/status', mailStatus)
 
 // listen to port 4000
 app.listen(process.env.PORT, () => {

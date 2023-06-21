@@ -6,7 +6,7 @@ const listMail = async (req: Request, res: Response) => {
     try {
         const scheduledEmails = await listScheduledEmails()
         return res.status(200).json({
-            message: 'Mail fetched',
+            message: 'All mail fetched',
             scheduledEmails
         })
     }
