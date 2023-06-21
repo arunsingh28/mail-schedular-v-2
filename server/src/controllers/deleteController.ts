@@ -4,14 +4,14 @@ import { deleteScheduledEmail } from '../services/agenda'
 const mailDelete = async (req: Request, res: Response) => {
     const { id } = req.params
     try {
-        await deleteScheduledEmail(id).then(() => {
-            console.log('Email deleted')
-        }).catch((error) => {
-            console.log('error', error)
-        })
-        return res.status(201).json({
-            message: 'Mail deleted',
-            mailId: id
+        const isDelete = await deleteScheduledEmail(id)
+        if (isDelete) {
+            return res.status(200).json({
+                message: 'Mail deleted'
+            })
+        }
+        return res.status(404).json({
+            message: 'Mail not found'
         })
     }
     catch (error: any) {

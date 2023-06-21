@@ -60,7 +60,6 @@ export const scheduleEmail = async (email: Email): Promise<void> => {
 // Reschedule an email
 export const rescheduleEmail = async (emailId: string, newScheduledTime: Date): Promise<void> => {
     try {
-
         // Cancel the existing job
         await agenda.cancel({ _id: new ObjectId(emailId) });
         console.log("Email canceled:", emailId);
@@ -77,12 +76,19 @@ export const rescheduleEmail = async (emailId: string, newScheduledTime: Date): 
 };
 
 // Delete a scheduled email
-export const deleteScheduledEmail = async (emailId: string): Promise<void> => {
+export const deleteScheduledEmail = async (emailId: string): Promise<boolean> => {
     try {
+        const job = await agenda.jobs();
+        const filterEmail = job.filter((job) => job.attrs.data._id === emailId);
+        if (filterEmail.length === 0) {
+            return false
+        }
         await agenda.cancel({ 'data._id': emailId });
-        console.log('Email canceled:', emailId);
+        console.log("Email canceled:", emailId);
+        return true
     } catch (error) {
         console.error('Error deleting scheduled email:', error);
+        return false
     }
 };
 
