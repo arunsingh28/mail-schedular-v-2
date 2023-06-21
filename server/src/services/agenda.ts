@@ -58,20 +58,24 @@ export const scheduleEmail = async (email: Email): Promise<void> => {
 };
 
 // Reschedule an email
-export const rescheduleEmail = async (emailId: string, newScheduledTime: Date): Promise<void> => {
+export const rescheduleEmail = async (emailId: string, newScheduledTime: Date): Promise<boolean> => {
     try {
+        // fetch mail by id
+        const job = await agenda.jobs();
+        const filterEmail = job.filter((job) => job.attrs.data._id === emailId);
         // Cancel the existing job
-        await agenda.cancel({ _id: new ObjectId(emailId) });
-        console.log("Email canceled:", emailId);
+        await agenda.cancel({ 'data._id': emailId });
         // Schedule the email with the new scheduled time
         const email = {
-            _id: emailId,
+            ...filterEmail[0].attrs.data,
+            send: false,
             scheduledTime: newScheduledTime
         };
         await scheduleEmail(email);
-        console.log("Email rescheduled:", email);
+        return true
     } catch (error) {
         console.error("Error rescheduling email:", error);
+        return false
     }
 };
 
@@ -99,11 +103,8 @@ export const readScheduledEmail = async (emailId: string): Promise<any | null> =
         const job = await agenda.jobs();
         const filterEmail = job.filter((job) => job.attrs.data._id === emailId);
         console.log("Scheduled email:", filterEmail);
-
         // Return the job data
         return filterEmail
-
-
     } catch (error) {
         console.error("Error reading scheduled email:", error);
         return null;
