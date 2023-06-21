@@ -68,7 +68,7 @@ export const rescheduleEmail = async (emailId: string, newScheduledTime: Date): 
         // Schedule the email with the new scheduled time
         const email = {
             ...filterEmail[0].attrs.data,
-            send: false,
+            sent: false,
             scheduledTime: newScheduledTime
         };
         await scheduleEmail(email);
