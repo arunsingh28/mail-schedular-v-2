@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { scheduleEmail } from '../services/agenda'
-import { ObjectId } from 'mongoose';
+
 
 // Create a new mail with schedule time
 const mailCreate = async (req: Request, res: Response) => {
@@ -14,11 +14,7 @@ const mailCreate = async (req: Request, res: Response) => {
             scheduledTime,
             _id: Date.now().toString()
         }
-        await scheduleEmail(emailPayload).then(() => {
-            console.log('Email scheduled')
-        }).catch((error) => {
-            console.log('error', error)
-        })
+        await scheduleEmail(emailPayload)
         return res.status(201).json({
             message: 'Mail scheduled',
             mailId: emailPayload._id,
