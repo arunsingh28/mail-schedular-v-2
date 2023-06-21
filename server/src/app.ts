@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 import mailRouter from './routes/mailRouter'
 import mailStatus from './controllers/statusController'
 import cors from 'cors'
-import database from '../config/database'
+import startAgenda from './services/agenda'
 dotenv.config()
 const app = express()
 
@@ -12,14 +12,17 @@ app.use(cors())
 // parse json data
 app.use(express.json())
 
-// connect to database
-database
+
 
 app.use('/', mailRouter)
 app.use('/status/:id', mailStatus)
 
 // listen to port 4000
 app.listen(process.env.PORT, () => {
+    // start agenda
+    startAgenda.start().catch((error) => {
+        console.log('agenda error', error)
+    })
     console.log(`Server is running on port ${process.env.PORT}`)
 })
 

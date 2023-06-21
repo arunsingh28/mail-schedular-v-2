@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer'
-import mailModel from '../models/mailModel'
 
 import dotenv from 'dotenv'
 dotenv.config()
@@ -12,8 +11,8 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL,
         pass: process.env.PASSWORD
     },
-    tls:{
-        ciphers:'SSLv3'
+    tls: {
+        ciphers: 'SSLv3'
     }
 })
 
@@ -26,19 +25,20 @@ const mailOptions = (to: string, subject: string, body: string) => {
     }
 }
 
+// verify connection configuration
 transporter.verify().then(() => {
     console.log('Ready for send emails')
 }).catch((error) => {
-    console.log('error',error.message)
+    console.log('error', error.message)
 })
 
+
+// send email function
 const sendMail = async (mail: string, subject: string, body: string) => {
     try {
-        await transporter.sendMail(mailOptions(mail, subject, body))
-        console.log('Email sent')
-        // update status
-        await mailModel.findOneAndUpdate({ email: mail }, { success: true }, { new: true })
-    } catch (error:any) {
+        const info = await transporter.sendMail(mailOptions(mail, subject, body))
+        console.log('Email sent', info.response)
+    } catch (error: any) {
         console.log(error.message)
     }
 }
